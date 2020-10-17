@@ -1,6 +1,6 @@
 {
-    "name": "test project",
-    "description": "A PHP project to test my package",
+    "name": "Agent",
+    "description": "A PHP CLI agent to communicate with the PHP stack-agent-thing framework.",
     "repositories": [
         {
             "type": "path",
