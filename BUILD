@@ -1,11 +1,9 @@
 composer require symfony/console
 
 sudo touch agent
-nick@sulaco:~/codebase/agent$ sudo chmod +X agent
+sudo chmod +X agent
 
 https://www.kerneldev.com/2017/12/16/how-to-build-a-command-line-application-using-php/
-
-
 
 //export PATH=/home/nick/codebase/agent:$PATH
 //but doesn't stick
