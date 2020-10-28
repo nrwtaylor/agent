@@ -14,9 +14,10 @@
         "hyperthese/php-serial": "*",
         "linkorb/tty": "dev-master",
         "nrwtaylor/stack-agent-thing": "0.0.1",
-        "symfony/console": "^4.1",
+        "symfony/console": "^4.3",
         "setasign/fpdi-fpdf": "^2.0",
-        "endroid/qr-code": "^3.2.10"
+        "endroid/qr-code": "^3.2.10",
+        "johngrogg/ics-parser": "^2.2"
     }
 }
 
