@@ -222,6 +222,13 @@ use Symfony\Component\Console\Output\OutputInterface;
         $text_response = "No text response.";
         if (isset($thing_report[$channel])) {
             $text_response = $thing_report[$channel];
+
+if ($channel == "log") {
+
+$text_response = preg_replace('#<br\s*/?>#i', "\n", $text_response);
+
+}
+
         }
 
         $response .= $text_response;
