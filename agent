@@ -43,12 +43,26 @@ use Symfony\Component\Console\Output\OutputInterface;
         'What from address should be used?',
         false
     )
+    ->addOption(
+        'log',
+        null,
+        InputOption::VALUE_REQUIRED,
+        'What logging should be displayed?',
+        false
+    )
 
     ->setCode(function (InputInterface $input, OutputInterface $output) {
         $default_handler = "php";
         $default_channel = "sms";
         $default_meta = "stack";
         $default_from = 'default_console_user';
+        $default_log = "off";
+
+        $log = $input->getOption('log');
+
+        if ($log == false) {
+            $log = $default_log;
+        }
 
         $message = $input->getArgument('message');
 
@@ -131,6 +145,45 @@ use Symfony\Component\Console\Output\OutputInterface;
                 $thing_report = $agent->thing_report;
         }
 
+        $response = "";
+
+        $log_response = ""; // Assume no log wanted
+
+        if (($log != "off") and (isset($thing_report['log'])) ) {
+            // TODO
+            // Command line input of log excludes.
+	    $log_excludes = ['"Thing"', '"Agent"','ran for',"[INFORMATION]"];
+
+            $log_text = $thing_report['log'];
+
+
+            $lines = preg_split('/<br[^>]*>/i', $log_text);
+
+            foreach($lines as $i=>$line) {
+
+               if (strpos($line,"\"Thing\"") !== false) {
+                   continue;
+               }
+               //if (strpos($line,"\"Agent\"") !== false) {
+               //    continue;
+               //}
+
+               if (strpos($line,"[INFORMATION]") !== false) {
+                   continue;
+               }
+
+               if (strpos($line,"\"Variables\"") !== false) {
+                   continue;
+               }
+
+               $log_response .= trim($line) ."\n";
+           }
+
+        }
+
+        $response .= $log_response;
+
+
         // See handling command line options.
         // https://symfony.com/doc/current/console/input.html
         $channel = $input->getOption('channel');
@@ -144,7 +197,6 @@ use Symfony\Component\Console\Output\OutputInterface;
             $text_response = $thing_report[$channel];
         }
 
-        $response = "";
         $response .= $text_response;
 
         $meta = strtolower($input->getOption('meta'));
