@@ -150,33 +150,60 @@ use Symfony\Component\Console\Output\OutputInterface;
         $log_response = ""; // Assume no log wanted
 
         if (($log != "off") and (isset($thing_report['log'])) ) {
-            // TODO
-            // Command line input of log excludes.
-	    $log_excludes = ['"Thing"', '"Agent"','ran for',"[INFORMATION]"];
+            $tokens = explode(" ", $log);
+
+            $log_includes = [];
+            $log_excludes = [];
+
+            foreach($tokens as $m=>$token) {
+                $first_character = substr($token, 0, 1);
+
+                if ($first_character === "+") {$log_includes[] = ltrim($token, "+"); continue;}
+                if ($first_character === "-") {$log_excludes[] = ltrim($token, "-"); continue;}
+
+                $log_includes[] = $token; // If no sign, treat as include.
+
+            }
+
+
+            if (strtolower($log) == "on") {
+                $log_excludes = ["\"Thing\"", "\"Agent\"","\"Variables\"","[DEBUG]","[OPTIMIZE]"];
+            } // default set of excludes
+
+            if (strtolower($log) == "all") {$log_excludes =  [];}
+
+            if (strtolower($log) == "optimize") {$log_includes = ["+[OPTIMIZE]"];}
+            if (strtolower($log) == "debug") {$log_includes = ["+[DEBUG]"];}
+            if (strtolower($log) == "information") {$log_includes = ["+[INFORMATION]"];}
+            if (strtolower($log) == "fatal") {$log_includes = ["+[FATAL]"];}
+            if (strtolower($log) == "warning") {$log_includes = ["+[WARNING]"];}
 
             $log_text = $thing_report['log'];
-
 
             $lines = preg_split('/<br[^>]*>/i', $log_text);
 
             foreach($lines as $i=>$line) {
 
-               if (strpos($line,"\"Thing\"") !== false) {
-                   continue;
-               }
-               //if (strpos($line,"\"Agent\"") !== false) {
-               //    continue;
-               //}
-
-               if (strpos($line,"[INFORMATION]") !== false) {
-                   continue;
+               foreach($log_excludes as $j=>$log_exclude) {
+                   if (stripos($line,$log_exclude) !== false) {
+                      continue 2;
+                   }
                }
 
-               if (strpos($line,"\"Variables\"") !== false) {
+               if (count($log_includes) == 0) {
+                   $log_response .= trim($line) ."\n";
                    continue;
                }
 
-               $log_response .= trim($line) ."\n";
+               foreach($log_includes as $j=>$log_include) {
+
+                   if (stripos($line,$log_include) !== false) {
+                      $log_response .= trim($line) ."\n";
+                      continue 2;
+                   }
+
+               }
+
            }
 
         }
