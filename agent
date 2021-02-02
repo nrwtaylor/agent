@@ -149,67 +149,89 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         $log_response = ""; // Assume no log wanted
 
-        if (($log != "off") and (isset($thing_report['log'])) ) {
+        if ($log != "off" and isset($thing_report['log'])) {
+            $log_handler = new Nrwtaylor\StackAgentThing\Makelog(
+                $thing,
+                $thing_report
+            );
+            $response .= $log_handler->thing_report['log'] . "\n\n";
+            $response .= "Self-report [Filtered]\n\n";
             $tokens = explode(" ", $log);
 
             $log_includes = [];
             $log_excludes = [];
 
-            foreach($tokens as $m=>$token) {
+            foreach ($tokens as $m => $token) {
                 $first_character = substr($token, 0, 1);
 
-                if ($first_character === "+") {$log_includes[] = ltrim($token, "+"); continue;}
-                if ($first_character === "-") {$log_excludes[] = ltrim($token, "-"); continue;}
+                if ($first_character === "+") {
+                    $log_includes[] = ltrim($token, "+");
+                    continue;
+                }
+                if ($first_character === "-") {
+                    $log_excludes[] = ltrim($token, "-");
+                    continue;
+                }
 
                 $log_includes[] = $token; // If no sign, treat as include.
-
             }
 
-
             if (strtolower($log) == "on") {
-                $log_excludes = ["\"Thing\"", "\"Agent\"","\"Variables\"","[DEBUG]","[OPTIMIZE]"];
+                $log_excludes = [
+                    "\"Thing\"",
+                    "\"Agent\"",
+                    "\"Variables\"",
+                    "[DEBUG]",
+                    "[OPTIMIZE]",
+                ];
             } // default set of excludes
 
-            if (strtolower($log) == "all") {$log_excludes =  [];}
+            if (strtolower($log) == "all") {
+                $log_excludes = [];
+            }
 
-            if (strtolower($log) == "optimize") {$log_includes = ["+[OPTIMIZE]"];}
-            if (strtolower($log) == "debug") {$log_includes = ["+[DEBUG]"];}
-            if (strtolower($log) == "information") {$log_includes = ["+[INFORMATION]"];}
-            if (strtolower($log) == "fatal") {$log_includes = ["+[FATAL]"];}
-            if (strtolower($log) == "warning") {$log_includes = ["+[WARNING]"];}
+            if (strtolower($log) == "optimize") {
+                $log_includes = ["+[OPTIMIZE]"];
+            }
+            if (strtolower($log) == "debug") {
+                $log_includes = ["+[DEBUG]"];
+            }
+            if (strtolower($log) == "information") {
+                $log_includes = ["+[INFORMATION]"];
+            }
+            if (strtolower($log) == "fatal") {
+                $log_includes = ["+[FATAL]"];
+            }
+            if (strtolower($log) == "warning") {
+                $log_includes = ["+[WARNING]"];
+            }
 
             $log_text = $thing_report['log'];
 
             $lines = preg_split('/<br[^>]*>/i', $log_text);
 
-            foreach($lines as $i=>$line) {
+            foreach ($lines as $i => $line) {
+                foreach ($log_excludes as $j => $log_exclude) {
+                    if (stripos($line, $log_exclude) !== false) {
+                        continue 2;
+                    }
+                }
 
-               foreach($log_excludes as $j=>$log_exclude) {
-                   if (stripos($line,$log_exclude) !== false) {
-                      continue 2;
-                   }
-               }
+                if (count($log_includes) == 0) {
+                    $log_response .= trim($line) . "\n";
+                    continue;
+                }
 
-               if (count($log_includes) == 0) {
-                   $log_response .= trim($line) ."\n";
-                   continue;
-               }
-
-               foreach($log_includes as $j=>$log_include) {
-
-                   if (stripos($line,$log_include) !== false) {
-                      $log_response .= trim($line) ."\n";
-                      continue 2;
-                   }
-
-               }
-
-           }
-
+                foreach ($log_includes as $j => $log_include) {
+                    if (stripos($line, $log_include) !== false) {
+                        $log_response .= trim($line) . "\n";
+                        continue 2;
+                    }
+                }
+            }
         }
 
-        $response .= $log_response;
-
+        $response .= $log_response . "\n";
 
         // See handling command line options.
         // https://symfony.com/doc/current/console/input.html
@@ -223,12 +245,13 @@ use Symfony\Component\Console\Output\OutputInterface;
         if (isset($thing_report[$channel])) {
             $text_response = $thing_report[$channel];
 
-if ($channel == "log") {
-
-$text_response = preg_replace('#<br\s*/?>#i', "\n", $text_response);
-
-}
-
+            if ($channel == "log") {
+                $text_response = preg_replace(
+                    '#<br\s*/?>#i',
+                    "\n",
+                    $text_response
+                );
+            }
         }
 
         $response .= $text_response;
@@ -261,7 +284,10 @@ $text_response = preg_replace('#<br\s*/?>#i', "\n", $text_response);
             if (isset($thing_report)) {
                 $stack_text = "Persistent stack not available.";
 
-                if ((isset($thing_report['thing'])) and ($thing_report['thing'] == false)) { 
+                if (
+                    isset($thing_report['thing']) and
+                    $thing_report['thing'] == false
+                ) {
                     $stack_text = 'No thing provided in response.';
                 }
 
