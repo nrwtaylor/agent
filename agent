@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application('Agent', '0.0.6'))
+(new Application('Agent', '0.0.7'))
     ->register('agent')
 
     ->addArgument('message', InputArgument::IS_ARRAY, 'Datagram message')
@@ -147,9 +147,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         $response = "";
 
-        $log_response = ""; // Assume no log wanted
 
         if ($log != "off" and isset($thing_report['log'])) {
+            $log_response = ""; // Assume no log wanted
             $log_handler = new Nrwtaylor\StackAgentThing\Makelog(
                 $thing,
                 $thing_report
@@ -229,9 +229,8 @@ use Symfony\Component\Console\Output\OutputInterface;
                     }
                 }
             }
+            $response .= $log_response . "\n";
         }
-
-        $response .= $log_response . "\n";
 
         // See handling command line options.
         // https://symfony.com/doc/current/console/input.html
