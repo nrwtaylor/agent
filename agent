@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application('Agent', '0.0.7'))
+(new Application('Agent', '0.1.0'))
     ->register('agent')
 
     ->addArgument('message', InputArgument::IS_ARRAY, 'Datagram message')
@@ -302,7 +302,8 @@ use Symfony\Component\Console\Output\OutputInterface;
             $response .= " " . $stack_text;
         }
 
-        return $output->writeln("<info>$response</info>");
+        $output->writeln("<info>$response</info>");
+        return 0;
     })
     ->getApplication()
     ->setDefaultCommand('agent', true) // Single command application
