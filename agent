@@ -245,7 +245,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             $agentclock->makeClocktime();
             $response .= "\n" . $agentclock->clock_time . " " . $thing->nuuid;
 
-            if ($watch_flag !== true) {
+            if ((isset($watch_flag)) and ($watch_flag !== true)) {
                 $response .= " WATCH FLAG";
             }
 
