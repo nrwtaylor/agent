@@ -69,6 +69,12 @@ use Symfony\Component\Console\Output\OutputInterface;
         InputOption::VALUE_NONE,
         "Show the available response channels."
     )
+    ->addOption(
+        "show-urls",
+        null,
+        InputOption::VALUE_NONE,
+        "Show the available response channels."
+    )
 
     ->setCode(function (InputInterface $input, OutputInterface $output) {
         $error_code = 0;
@@ -212,6 +218,21 @@ use Symfony\Component\Console\Output\OutputInterface;
             $response .= "\n" . trim($channels_text);
         }
 
+        $urls = strtolower($input->getOption("show-urls"));
+        $urls_text = "";
+        if ($urls == true) {
+            if (isset($agent->link)) {
+                $urls_text .= $agent->link . "\n";
+            }
+            if (isset($agent->url)) {
+                $urls_text .= $agent->url . "\n";
+            }
+            if (isset($agent->urls)) {
+                $urls_text .= implode("\n", $agent->urls) . "\n";
+            }
+            $response .= "\n" . trim($urls_text);
+        }
+
         if ($watch !== "off") {
             [$log_includes, $log_excludes] = parseCommand($watch);
             $watch_flag = filterText(
@@ -245,7 +266,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             $agentclock->makeClocktime();
             $response .= "\n" . $agentclock->clock_time . " " . $thing->nuuid;
 
-            if ((isset($watch_flag)) and ($watch_flag !== true)) {
+            if (isset($watch_flag) and $watch_flag !== true) {
                 $response .= " WATCH FLAG";
             }
 
