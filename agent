@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application("Agent", "0.1.0"))
+(new Application("Agent", "0.1.1"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -57,11 +57,21 @@ use Symfony\Component\Console\Output\OutputInterface;
         'What to watch for ie --watch="+warning"',
         false
     )
+
+    ->addOption(
+        "regex",
+        null,
+        InputOption::VALUE_REQUIRED,
+        'Watch for a regex-based match ie --regex="/warning/"',
+        false
+    )
+
+
     ->addOption(
         "flag-error",
         null,
         InputOption::VALUE_NONE,
-        "Trigger error code response. Use with --watch"
+        "Trigger error code response. Use with --watch and --regex"
     )
     ->addOption(
         "show-channels",
@@ -85,6 +95,7 @@ use Symfony\Component\Console\Output\OutputInterface;
         $default_from = "default_console_user";
         $default_log = "off";
         $default_watch = "off";
+        $default_regex = "off";
         $default_channels = "off";
         $default_error = "off";
 
@@ -99,6 +110,14 @@ use Symfony\Component\Console\Output\OutputInterface;
         if ($watch == false) {
             $watch = $default_watch;
         }
+
+        $regex = $input->getOption("regex");
+
+        if ($regex == false) {
+            $regex = $default_regex;
+        }
+
+
 
         $message = $input->getArgument("message");
 
@@ -235,6 +254,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         if ($watch !== "off") {
             [$log_includes, $log_excludes] = parseCommand($watch);
+
             $watch_flag = filterText(
                 $text_response,
                 $log_includes,
@@ -244,6 +264,16 @@ use Symfony\Component\Console\Output\OutputInterface;
                 $error_code = 1;
             }
         }
+
+        if ($regex !== "off") {
+            $pattern = $regex;
+            $regex_flag = preg_match($pattern, $text_response);
+            if ($regex_flag === 0) {$regex_flag = true;} else {$regex_flag = false;}
+            if ($regex_flag !== true) {
+                $error_code = 1;
+            }
+        }
+
 
         $meta = strtolower($input->getOption("meta"));
 
@@ -269,6 +299,11 @@ use Symfony\Component\Console\Output\OutputInterface;
             if (isset($watch_flag) and $watch_flag !== true) {
                 $response .= " WATCH FLAG";
             }
+
+            if (isset($regex_flag) and $regex_flag !== true) {
+                $response .= " REGEX FLAG";
+            }
+
 
             // Determine responsiveness.
             // Did the stack provide a thing, a thing and a response ...
@@ -387,6 +422,32 @@ function parseCommand($log_command)
     $log_includes = [];
     $log_excludes = [];
 
+
+    // First see if there are no + or - signs.
+    // If there are not then look for the whole phrase.
+
+    $sign_flag = false;
+    foreach ($tokens as $m => $token) {
+        $first_character = substr($token, 0, 1);
+
+        if ($first_character === "+") {
+            $sign_flag = true;
+            break;
+        }
+        if ($first_character === "-") {
+            $sign_flag = true;
+            break;
+        }
+    }
+
+    if ($sign_flag === false) {
+        $log_includes[] = $log_command;
+        return [$log_includes, $log_excludes];
+    }
+
+    // Saw a plus or a minus sign.
+    // Parse this. Assume that tokens without a sign are include.
+
     foreach ($tokens as $m => $token) {
         $first_character = substr($token, 0, 1);
 
@@ -406,30 +467,6 @@ function parseCommand($log_command)
 
 function filterText($log_text, $log_includes = null, $log_excludes = null)
 {
-    /*
-            $tokens = explode(" ", $log_command);
-
-            $log_includes = [];
-            $log_excludes = [];
-
-            foreach ($tokens as $m => $token) {
-                $first_character = substr($token, 0, 1);
-
-                if ($first_character === "+") {
-                    $log_includes[] = ltrim($token, "+");
-                    continue;
-                }
-                if ($first_character === "-") {
-                    $log_excludes[] = ltrim($token, "-");
-                    continue;
-                }
-
-                $log_includes[] = $token; // If no sign, treat as include.
-            }
-*/
-
-    //[$log_includes, $log_excludes] = parseCommand($log_command);
-
     $response = "";
     $lines = preg_split("/<br[^>]*>/i", $log_text);
 
