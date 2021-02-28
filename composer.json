@@ -1,13 +1,7 @@
 {
     "name": "nrwtaylor/agent",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "A PHP CLI agent to communicate with the PHP stack-agent-thing framework.",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/home/nick/codebase/stack-agent-thing"
-        }
-    ],
     "require": {
         "slim/slim": "^3.0",
         "ramsey/uuid": "^3.7",
