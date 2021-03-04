@@ -66,7 +66,6 @@ use Symfony\Component\Console\Output\OutputInterface;
         false
     )
 
-
     ->addOption(
         "flag-error",
         null,
@@ -117,13 +116,37 @@ use Symfony\Component\Console\Output\OutputInterface;
             $regex = $default_regex;
         }
 
-
-
         $message = $input->getArgument("message");
 
         $message = implode(" ", $message);
 
         $thing = new \Nrwtaylor\StackAgentThing\Thing(null);
+
+        // Handle stream as agent_input?
+
+        $agent_input = null;
+
+        $readStreams = [STDIN];
+        $writeStreams = [];
+        $exceptStreams = [];
+        $streamCount = stream_select(
+            $readStreams,
+            $writeStreams,
+            $exceptStreams,
+            0
+        );
+
+        $hasStdIn = $streamCount === 1;
+
+        if ($hasStdIn) {
+            $f = fopen("php://stdin", "r");
+            $agent_input = "";
+            while ($line = fgets($f)) {
+                $agent_input .= $line;
+            }
+            fclose($f);
+            // Read content from STDIN ...
+        }
 
         $uuid = $thing->getUuid();
 
@@ -160,7 +183,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             return;
         }
 
-        $thing->Create($id, $to, $message);
+        $thing->Create($id, $to, $message, $agent_input);
 
         // Tag as console input
         $console = new \Nrwtaylor\StackAgentThing\Channel($thing, "console");
@@ -176,6 +199,7 @@ use Symfony\Component\Console\Output\OutputInterface;
                     "to" => $id,
                     "from" => "agent",
                     "subject" => $message,
+                    "agent_input" => $agent_input
                 ]);
                 $client = new \GearmanClient();
                 $client->addServer();
@@ -195,7 +219,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             default:
                 // Default console handler is SMS.
                 $handler = $default_handler;
-                $agent = new \Nrwtaylor\StackAgentThing\Agent($thing);
+                $agent = new \Nrwtaylor\StackAgentThing\Agent($thing, $agent_input);
 
                 $thing_report = $agent->thing_report;
         }
@@ -268,12 +292,15 @@ use Symfony\Component\Console\Output\OutputInterface;
         if ($regex !== "off") {
             $pattern = $regex;
             $regex_flag = preg_match($pattern, $text_response);
-            if ($regex_flag === 0) {$regex_flag = true;} else {$regex_flag = false;}
+            if ($regex_flag === 0) {
+                $regex_flag = true;
+            } else {
+                $regex_flag = false;
+            }
             if ($regex_flag !== true) {
                 $error_code = 1;
             }
         }
-
 
         $meta = strtolower($input->getOption("meta"));
 
@@ -303,7 +330,6 @@ use Symfony\Component\Console\Output\OutputInterface;
             if (isset($regex_flag) and $regex_flag !== true) {
                 $response .= " REGEX FLAG";
             }
-
 
             // Determine responsiveness.
             // Did the stack provide a thing, a thing and a response ...
@@ -421,7 +447,6 @@ function parseCommand($log_command)
 
     $log_includes = [];
     $log_excludes = [];
-
 
     // First see if there are no + or - signs.
     // If there are not then look for the whole phrase.
