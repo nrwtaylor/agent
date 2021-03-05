@@ -117,7 +117,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
             // If the watch string looks like regex and regex isn't set
             // Set regex to watch string
-            if ($watch[0] == $watch[strlen($watch) - 1]) {
+            if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
                 $regex = $watch;
             }
         }
