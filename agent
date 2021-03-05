@@ -301,9 +301,9 @@ use Symfony\Component\Console\Output\OutputInterface;
                 $log_includes,
                 $log_excludes
             );
-            if ($watch_flag !== true) {
-                $error_code = 1;
-            }
+//            if ($watch_flag !== true) {
+//                $error_code = 1;
+//            }
         }
 
         if ($regex !== false) {
@@ -314,10 +314,19 @@ use Symfony\Component\Console\Output\OutputInterface;
             } else {
                 $regex_flag = false;
             }
-            if ($regex_flag !== true) {
-                $error_code = 1;
-            }
+//            if ($regex_flag !== true) {
+//                $error_code = 1;
+//            }
         }
+
+// Resolve error code
+if ($regex_flag !== true) {
+$error_code = 1;
+}
+
+if ($watch_flag !== true) {
+$error_code = 1;
+}
 
         $meta = strtolower($input->getOption("meta"));
 
