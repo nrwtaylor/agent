@@ -88,6 +88,8 @@ use Symfony\Component\Console\Output\OutputInterface;
     ->setCode(function (InputInterface $input, OutputInterface $output) {
         $error_code = 0;
 
+$flag_match = 1; // Match not found.
+
         $default_handler = "php";
         $default_channel = "sms";
         $default_meta = "stack";
@@ -301,9 +303,10 @@ use Symfony\Component\Console\Output\OutputInterface;
                 $log_includes,
                 $log_excludes
             );
-//            if ($watch_flag !== true) {
-//                $error_code = 1;
-//            }
+           if ($watch_flag !== true) {
+                //$error_code = 1;
+                $flag_match = 0; // Found a match
+            }
         }
 
         if ($regex !== false) {
@@ -314,11 +317,18 @@ use Symfony\Component\Console\Output\OutputInterface;
             } else {
                 $regex_flag = false;
             }
-//            if ($regex_flag !== true) {
-//                $error_code = 1;
-//            }
+            if ($regex_flag !== true) {
+                //$error_code = 1;
+                $flag_match = 0; // Found a match.
+            }
         }
 
+/*
+Claws options to test:  "0 (passed)", "non-0 (failed)"
+So in this content. "Failed to find a match" is 1.
+*/
+
+/*
 // Resolve error code
 if ($regex_flag !== true) {
 $error_code = 1;
@@ -327,7 +337,7 @@ $error_code = 1;
 if ($watch_flag !== true) {
 $error_code = 1;
 }
-
+*/
         $meta = strtolower($input->getOption("meta"));
 
         if ($meta == false) {
@@ -396,7 +406,8 @@ $error_code = 1;
 
         $flag_error = strtolower($input->getOption("flag-error"));
         if ($flag_error == true) {
-            return $error_code;
+return $flag_match; //0 --- match found, 1 --- failed to find match
+            //return $error_code;
         }
 
         return 0;
