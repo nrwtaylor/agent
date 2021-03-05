@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application("Agent", "0.1.3"))
+(new Application("Agent", "0.1.4"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -93,8 +93,8 @@ use Symfony\Component\Console\Output\OutputInterface;
         $default_meta = "stack";
         $default_from = "default_console_user";
         $default_log = "off";
-        $default_watch = "off";
-        $default_regex = "off";
+        $default_watch = false;
+        $default_regex = false;
         $default_channels = "off";
         $default_error = "off";
 
@@ -111,9 +111,23 @@ use Symfony\Component\Console\Output\OutputInterface;
         }
 
         $regex = $input->getOption("regex");
-
+        $regex_error = "";
         if ($regex == false) {
             $regex = $default_regex;
+
+            // If the watch string looks like regex and regex isn't set
+            // Set regex to watch string
+            if ($watch[0] == $watch[strlen($watch) - 1]) {
+                $regex = $watch;
+            }
+        }
+
+        // Check if regex string has delimiters
+        // Otherwise ignore it.
+        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
+        } else {
+            $regex_error = "REGEX INVALID";
+            $regex = false;
         }
 
         $message = $input->getArgument("message");
@@ -199,7 +213,7 @@ use Symfony\Component\Console\Output\OutputInterface;
                     "to" => $id,
                     "from" => "agent",
                     "subject" => $message,
-                    "agent_input" => $agent_input
+                    "agent_input" => $agent_input,
                 ]);
                 $client = new \GearmanClient();
                 $client->addServer();
@@ -219,7 +233,10 @@ use Symfony\Component\Console\Output\OutputInterface;
             default:
                 // Default console handler is SMS.
                 $handler = $default_handler;
-                $agent = new \Nrwtaylor\StackAgentThing\Agent($thing, $agent_input);
+                $agent = new \Nrwtaylor\StackAgentThing\Agent(
+                    $thing,
+                    $agent_input
+                );
 
                 $thing_report = $agent->thing_report;
         }
@@ -276,7 +293,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             $response .= "\n" . trim($urls_text);
         }
 
-        if ($watch !== "off") {
+        if ($watch !== false) {
             [$log_includes, $log_excludes] = parseCommand($watch);
 
             $watch_flag = filterText(
@@ -289,7 +306,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             }
         }
 
-        if ($regex !== "off") {
+        if ($regex !== false) {
             $pattern = $regex;
             $regex_flag = preg_match($pattern, $text_response);
             if ($regex_flag === 0) {
@@ -326,6 +343,8 @@ use Symfony\Component\Console\Output\OutputInterface;
             if (isset($watch_flag) and $watch_flag !== true) {
                 $response .= " WATCH FLAG";
             }
+
+            $response .= $regex_error == "" ? "" : " " . $regex_error;
 
             if (isset($regex_flag) and $regex_flag !== true) {
                 $response .= " REGEX FLAG";
