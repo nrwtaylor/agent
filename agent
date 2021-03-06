@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application("Agent", "0.1.4"))
+(new Application("Agent", "0.1.5"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -88,7 +88,7 @@ use Symfony\Component\Console\Output\OutputInterface;
     ->setCode(function (InputInterface $input, OutputInterface $output) {
         $error_code = 0;
 
-$flag_match = 1; // Match not found.
+        $flag_match = 1; // Match not found.
 
         $default_handler = "php";
         $default_channel = "sms";
@@ -111,8 +111,8 @@ $flag_match = 1; // Match not found.
         if ($watch == false) {
             $watch = $default_watch;
         }
-//echo "merp";
-//validateRegex($watch);
+        //echo "merp";
+        //validateRegex($watch);
 
         $regex = $input->getOption("regex");
         $regex_error = "";
@@ -123,17 +123,15 @@ $flag_match = 1; // Match not found.
             // Set regex to watch string
 
             if (validateRegex($watch) == true) {
-
-          //  if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
+                //  if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
                 $regex = $watch;
             }
         }
 
         // Check if regex string has delimiters
         // Otherwise ignore it.
-            if (validateRegex($regex) == true) {
-
-//        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
+        if (validateRegex($regex) == true) {
+            //        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
         } else {
             $regex_error = "REGEX INVALID";
             $regex = false;
@@ -310,7 +308,7 @@ $flag_match = 1; // Match not found.
                 $log_includes,
                 $log_excludes
             );
-           if ($watch_flag !== true) {
+            if ($watch_flag !== true) {
                 //$error_code = 1;
                 $flag_match = 0; // Found a match
             }
@@ -330,12 +328,12 @@ $flag_match = 1; // Match not found.
             }
         }
 
-/*
+        /*
 Claws options to test:  "0 (passed)", "non-0 (failed)"
 So in this content. "Failed to find a match" is 1.
 */
 
-/*
+        /*
 // Resolve error code
 if ($regex_flag !== true) {
 $error_code = 1;
@@ -370,8 +368,12 @@ $error_code = 1;
                 $response .= " WATCH FLAG";
             }
 
-            $response .= $regex_error == "" ? "" : " " . $regex_error;
-
+            if (
+                (isset($regex_flag) or isset($watch_flag)) and
+                $regex_flag !== true
+            ) {
+                $response .= $regex_error == "" ? "" : " " . $regex_error;
+            }
             if (isset($regex_flag) and $regex_flag !== true) {
                 $response .= " REGEX FLAG";
             }
@@ -413,7 +415,7 @@ $error_code = 1;
 
         $flag_error = strtolower($input->getOption("flag-error"));
         if ($flag_error == true) {
-return $flag_match; //0 --- match found, 1 --- failed to find match
+            return $flag_match; //0 --- match found, 1 --- failed to find match
             //return $error_code;
         }
 
@@ -488,23 +490,24 @@ Read a string to determine what to include or exclude.
 
 */
 
-function validateRegex($text) {
-set_error_handler("warning_handler", E_WARNING);
-try {
-$test = preg_match($text, "");
+function validateRegex($text)
+{
+    set_error_handler("warning_handler", E_WARNING);
+    try {
+        $test = preg_match($text, "");
+    } catch (Exception $e) {
+        return false;
+        // ...
+    }
 
-} catch (Exception $e) {
-   return false;
-    // ...
-  }
-
-restore_error_handler();
-return true;
+    restore_error_handler();
+    return true;
 }
 
-function warning_handler($errno, $errstr) {
-$regex_error = "MERP";
-throw new Exception();
+function warning_handler($errno, $errstr)
+{
+    $regex_error = "MERP";
+    throw new Exception();
 }
 
 function parseCommand($log_command)
