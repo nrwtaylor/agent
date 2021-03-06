@@ -111,6 +111,8 @@ $flag_match = 1; // Match not found.
         if ($watch == false) {
             $watch = $default_watch;
         }
+//echo "merp";
+//validateRegex($watch);
 
         $regex = $input->getOption("regex");
         $regex_error = "";
@@ -119,14 +121,19 @@ $flag_match = 1; // Match not found.
 
             // If the watch string looks like regex and regex isn't set
             // Set regex to watch string
-            if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
+
+            if (validateRegex($watch) == true) {
+
+          //  if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
                 $regex = $watch;
             }
         }
 
         // Check if regex string has delimiters
         // Otherwise ignore it.
-        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
+            if (validateRegex($regex) == true) {
+
+//        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
         } else {
             $regex_error = "REGEX INVALID";
             $regex = false;
@@ -480,6 +487,26 @@ function responseLog($log, $thing, $thing_report)
 Read a string to determine what to include or exclude.
 
 */
+
+function validateRegex($text) {
+set_error_handler("warning_handler", E_WARNING);
+try {
+$test = preg_match($text, "");
+
+} catch (Exception $e) {
+   return false;
+    // ...
+  }
+
+restore_error_handler();
+return true;
+}
+
+function warning_handler($errno, $errstr) {
+$regex_error = "MERP";
+throw new Exception();
+}
+
 function parseCommand($log_command)
 {
     $tokens = explode(" ", $log_command);
