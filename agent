@@ -11,7 +11,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-(new Application("Agent", "0.1.5"))
+// Added persistent user level memory. Until power off.
+
+(new Application("Agent", "0.1.6"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -200,6 +202,7 @@ use Symfony\Component\Console\Output\OutputInterface;
                 return;
             }
             $agent = new Agent($thing, $f);
+
             $this->thing_report = $agent->thing_report;
             return;
         }
@@ -209,6 +212,9 @@ use Symfony\Component\Console\Output\OutputInterface;
         // Tag as console input
         $console = new \Nrwtaylor\StackAgentThing\Channel($thing, "console");
 
+//        $prior = new \Nrwtaylor\StackAgentThing\Channel($thing, "prior");
+
+//var_dump($prior->prior_uuid);
         // Get the handler which takes the short message.
         // e.g. Gearman, direct PHP call, Apache request ...
         $handler = strtolower($input->getOption("handler"));
@@ -378,6 +384,10 @@ $error_code = 1;
                 $response .= " REGEX FLAG";
             }
 
+$prior = new \Nrwtaylor\StackAgentThing\Prior($thing, "prior");
+$response .= $prior->prior_uuid;
+
+
             // Determine responsiveness.
             // Did the stack provide a thing, a thing and a response ...
             // Did the stack respond?
@@ -504,10 +514,11 @@ function validateRegex($text)
     return true;
 }
 
-function warning_handler($errno, $errstr)
+function warning_handler($errno, $errstr, $errfile, $errline)
 {
+    $err_text = $errno ." " . $errstr . " " . $errfile . " " . $errline;
     $regex_error = "MERP";
-    throw new Exception();
+    throw new Exception($err_text);
 }
 
 function parseCommand($log_command)
