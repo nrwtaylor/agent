@@ -113,31 +113,6 @@ use Symfony\Component\Console\Output\OutputInterface;
         if ($watch == false) {
             $watch = $default_watch;
         }
-        //echo "merp";
-        //validateRegex($watch);
-
-        $regex = $input->getOption("regex");
-        $regex_error = "";
-        if ($regex == false) {
-            $regex = $default_regex;
-
-            // If the watch string looks like regex and regex isn't set
-            // Set regex to watch string
-
-            if (validateRegex($watch) == true) {
-                //  if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
-                $regex = $watch;
-            }
-        }
-
-        // Check if regex string has delimiters
-        // Otherwise ignore it.
-        if (validateRegex($regex) == true) {
-            //        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
-        } else {
-            $regex_error = "REGEX INVALID";
-            $regex = false;
-        }
 
         $message = $input->getArgument("message");
 
@@ -180,6 +155,32 @@ use Symfony\Component\Console\Output\OutputInterface;
         }
         $to = "agent";
 
+        $regex_handler = new \Nrwtaylor\StackAgentThing\Regex($thing, "regex");
+
+        $regex = $input->getOption("regex");
+        $regex_error = "";
+        if ($regex == false) {
+            $regex = $default_regex;
+
+            // If the watch string looks like regex and regex isn't set
+            // Set regex to watch string
+
+            if ($regex_handler->validateRegex($watch) == true) {
+                //  if (($watch !== false) and ($watch[0] == $watch[strlen($watch) - 1])) {
+                $regex = $watch;
+            }
+        }
+
+        // Check if regex string has delimiters
+        // Otherwise ignore it.
+        if ($regex_handler->validateRegex($regex) == true) {
+            //        if ($regex === false or $regex[0] == $regex[strlen($regex) - 1]) {
+        } else {
+            $regex_error = "REGEX INVALID";
+            $regex = false;
+        }
+
+
         $meta = strtolower($input->getOption("meta"));
 
         if ($meta == false) {
@@ -212,11 +213,9 @@ use Symfony\Component\Console\Output\OutputInterface;
         // Tag as console input
         $console = new \Nrwtaylor\StackAgentThing\Channel($thing, "console");
 
-//        $prior = new \Nrwtaylor\StackAgentThing\Channel($thing, "prior");
-
-//var_dump($prior->prior_uuid);
         // Get the handler which takes the short message.
         // e.g. Gearman, direct PHP call, Apache request ...
+
         $handler = strtolower($input->getOption("handler"));
 
         switch ($handler) {
@@ -306,10 +305,17 @@ use Symfony\Component\Console\Output\OutputInterface;
             $response .= "\n" . trim($urls_text);
         }
 
-        if ($watch !== false) {
-            [$log_includes, $log_excludes] = parseCommand($watch);
+            $text_handler = new \Nrwtaylor\StackAgentThing\Text(
+                $thing,
+                "text"
+            );
 
-            $watch_flag = filterText(
+        $query_handler = new \Nrwtaylor\StackAgentThing\Query($thing, "query");
+
+        if ($watch !== false) {
+            [$log_includes, $log_excludes] = $query_handler->parseQuery($watch);
+
+            $watch_flag = $text_handler->filterText(
                 $text_response,
                 $log_includes,
                 $log_excludes
@@ -339,16 +345,6 @@ Claws options to test:  "0 (passed)", "non-0 (failed)"
 So in this content. "Failed to find a match" is 1.
 */
 
-        /*
-// Resolve error code
-if ($regex_flag !== true) {
-$error_code = 1;
-}
-
-if ($watch_flag !== true) {
-$error_code = 1;
-}
-*/
         $meta = strtolower($input->getOption("meta"));
 
         if ($meta == false) {
@@ -356,45 +352,49 @@ $error_code = 1;
         }
 
         if ($meta == "stack" or $meta == "on") {
+            $meta_response = "";
             $agentclock = new \Nrwtaylor\StackAgentThing\Clocktime(
                 $thing,
                 "clocktime"
             );
 
-            $response .= "\n";
-            $response .=
+            $meta_response .=
                 strtoupper($handler) .
                 " " .
                 number_format($thing->elapsed_runtime()) .
                 "ms";
             $agentclock->makeClocktime();
-            $response .= "\n" . $agentclock->clock_time . " " . $thing->nuuid;
+            $meta_response .=
+                "\n" . $agentclock->clock_time . " " . $thing->nuuid;
+
+            $prior = new \Nrwtaylor\StackAgentThing\Prior($thing, "prior");
+            $meta_response .= " " . substr($prior->prior_uuid, 0, 4);
+
 
             if (isset($watch_flag) and $watch_flag !== true) {
-                $response .= " WATCH FLAG";
+                $meta_response .= " WATCH FLAG";
             }
 
             if (
                 (isset($regex_flag) or isset($watch_flag)) and
                 $regex_flag !== true
             ) {
-                $response .= $regex_error == "" ? "" : " " . $regex_error;
+                $meta_response .= $regex_error == "" ? "" : " " . $regex_error;
             }
             if (isset($regex_flag) and $regex_flag !== true) {
-                $response .= " REGEX FLAG";
+                $meta_response .= " REGEX FLAG";
             }
-
-$prior = new \Nrwtaylor\StackAgentThing\Prior($thing, "prior");
-$response .= $prior->prior_uuid;
-
 
             // Determine responsiveness.
             // Did the stack provide a thing, a thing and a response ...
             // Did the stack respond?
             $stack_text = "No stack response.";
             if (isset($thing_report)) {
-                $stack_text = "Persistent stack not available.";
-
+                if ($prior->prior_uuid == false) {
+                    $stack_text = "Persistent stack not found.";
+                } else {
+                    $stack_text = "Memory available.";
+                }
                 if (
                     isset($thing_report["thing"]) and
                     $thing_report["thing"] == false
@@ -411,10 +411,11 @@ $response .= $prior->prior_uuid;
                 }
             }
 
-            $response .= " " . $stack_text;
+            $meta_response .= " " . $stack_text;
         }
 
         $output->writeln("<info>$response</info>");
+        $output->writeln("<comment>$meta_response</comment>");
 
         // If error flagging is on, then return the generated error code.
         // Claws uses this with a test filter
@@ -451,8 +452,8 @@ function responseLog($log, $thing, $thing_report)
         );
         $log_response .= $log_handler->thing_report["log"] . "\n\n";
         $log_response .= "Self-report [Filtered]\n\n";
-
-        [$log_includes, $log_excludes] = parseCommand($log);
+        $query_handler = new \Nrwtaylor\StackAgentThing\Query($thing, "query");
+        [$log_includes, $log_excludes] = $query_handler->parseQuery($log);
 
         if (strtolower($log) == "on") {
             $log_excludes = [
@@ -486,7 +487,9 @@ function responseLog($log, $thing, $thing_report)
 
         $log_text = $thing_report["log"];
 
-        $log_response .= filterText($log_text, $log_includes, $log_excludes);
+        $text_handler = new \Nrwtaylor\StackAgentThing\Text($thing, "text");
+
+        $log_response .= $text_handler->filterText($log_text, $log_includes, $log_excludes);
 
         //$response .= $log_response . "\n";
         return $log_response;
@@ -499,104 +502,4 @@ function responseLog($log, $thing, $thing_report)
 Read a string to determine what to include or exclude.
 
 */
-
-function validateRegex($text)
-{
-    set_error_handler("warning_handler", E_WARNING);
-    try {
-        $test = preg_match($text, "");
-    } catch (Exception $e) {
-        return false;
-        // ...
-    }
-
-    restore_error_handler();
-    return true;
-}
-
-function warning_handler($errno, $errstr, $errfile, $errline)
-{
-    $err_text = $errno ." " . $errstr . " " . $errfile . " " . $errline;
-    $regex_error = "MERP";
-    throw new Exception($err_text);
-}
-
-function parseCommand($log_command)
-{
-    $tokens = explode(" ", $log_command);
-
-    $log_includes = [];
-    $log_excludes = [];
-
-    // First see if there are no + or - signs.
-    // If there are not then look for the whole phrase.
-
-    $sign_flag = false;
-    foreach ($tokens as $m => $token) {
-        $first_character = substr($token, 0, 1);
-
-        if ($first_character === "+") {
-            $sign_flag = true;
-            break;
-        }
-        if ($first_character === "-") {
-            $sign_flag = true;
-            break;
-        }
-    }
-
-    if ($sign_flag === false) {
-        $log_includes[] = $log_command;
-        return [$log_includes, $log_excludes];
-    }
-
-    // Saw a plus or a minus sign.
-    // Parse this. Assume that tokens without a sign are include.
-
-    foreach ($tokens as $m => $token) {
-        $first_character = substr($token, 0, 1);
-
-        if ($first_character === "+") {
-            $log_includes[] = ltrim($token, "+");
-            continue;
-        }
-        if ($first_character === "-") {
-            $log_excludes[] = ltrim($token, "-");
-            continue;
-        }
-
-        $log_includes[] = $token; // If no sign, treat as include.
-    }
-    return [$log_includes, $log_excludes];
-}
-
-function filterText($log_text, $log_includes = null, $log_excludes = null)
-{
-    $response = "";
-    $lines = preg_split("/<br[^>]*>/i", $log_text);
-
-    foreach ($lines as $i => $line) {
-        foreach ($log_excludes as $j => $log_exclude) {
-            if (stripos($line, $log_exclude) !== false) {
-                continue 2;
-            }
-        }
-
-        if (count($log_includes) == 0) {
-            $response .= trim($line) . "\n";
-            continue;
-        }
-
-        foreach ($log_includes as $j => $log_include) {
-            if (stripos($line, $log_include) !== false) {
-                $response .= trim($line) . "\n";
-                continue 2;
-            }
-        }
-    }
-    if ($response === "") {
-        return true;
-    }
-    return $response;
-}
 
