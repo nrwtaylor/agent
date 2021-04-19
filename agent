@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.1.6"))
+(new Application("Agent", "0.1.9"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -146,13 +146,33 @@ use Symfony\Component\Console\Output\OutputInterface;
             // Read content from STDIN ...
         }
 
+        // Load settings file
+        // See if there is an identity.
+
+        $settings_file = __DIR__ . "/private/settings.php";
+        if (file_exists($settings_file)) {
+           $settings = require($settings_file);
+        }
+
+
+        $from = strtolower($input->getOption("from"));
+
+        if (isset($settings['settings']['agent']['default_from'])) {
+           $default_from = $settings['settings']['agent']['default_from'];
+        // TODO Command line option
+
+        }
+
+        if ($from == false) {
+            $from = $default_from;
+        }
+
         $uuid = $thing->getUuid();
 
-        // TODO Command line option
-        $test_new_user = false;
-        if ($test_new_user) {
-            $id = "console_" . $uuid;
+        if ($from == "<random non-persistent>") {
+            $from = "console_" . $uuid;
         }
+
         $to = "agent";
 
         $regex_handler = new \Nrwtaylor\StackAgentThing\Regex($thing, "regex");
@@ -187,14 +207,6 @@ use Symfony\Component\Console\Output\OutputInterface;
             $from = $default_from;
         }
 
-        $from = strtolower($input->getOption("from"));
-
-        if ($from == false) {
-            $from = $default_meta;
-        }
-
-        $id = $from;
-
         if ($thing->thing != false) {
             $f = trim(str_replace($uuid, "", $input));
             if ($f == "" or $f == "agent") {
@@ -208,7 +220,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             return;
         }
 
-        $thing->Create($id, $to, $message, $agent_input);
+        $thing->Create($from, $to, $message, $agent_input);
 
         // Tag as console input
         $console = new \Nrwtaylor\StackAgentThing\Channel($thing, "console");
@@ -222,7 +234,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             case "gearman":
                 // Build, send and receive the Gearman datagram.
                 $arr = json_encode([
-                    "to" => $id,
+                    "to" => $from,
                     "from" => "agent",
                     "subject" => $message,
                     "agent_input" => $agent_input,
@@ -363,6 +375,7 @@ So in this content. "Failed to find a match" is 1.
                 " " .
                 number_format($thing->elapsed_runtime()) .
                 "ms";
+            $meta_response .= " " . $from;
             $agentclock->makeClocktime();
             $meta_response .=
                 "\n" . $agentclock->clock_time . " " . $thing->nuuid;
@@ -415,8 +428,10 @@ So in this content. "Failed to find a match" is 1.
         }
 
         $output->writeln("<info>$response</info>");
-        $output->writeln("<comment>$meta_response</comment>");
 
+        if (isset($meta_response)) {
+            $output->writeln("<comment>$meta_response</comment>");
+        }
         // If error flagging is on, then return the generated error code.
         // Claws uses this with a test filter
         // And it is a common way of returning a signal from a
