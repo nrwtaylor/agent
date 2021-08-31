@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.1.9"))
+(new Application("Agent", "0.1.10"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -145,6 +145,9 @@ use Symfony\Component\Console\Output\OutputInterface;
             fclose($f);
             // Read content from STDIN ...
         }
+
+        $uuid = $thing->getUuid();
+
 
         // Load settings file
         // See if there is an identity.
@@ -428,6 +431,7 @@ So in this content. "Failed to find a match" is 1.
         }
 
         $output->writeln("<info>$response</info>");
+        //$output->writeln("<comment>$meta_response</comment>");
 
         if (isset($meta_response)) {
             $output->writeln("<comment>$meta_response</comment>");
