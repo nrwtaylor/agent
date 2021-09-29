@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.1.9"))
+(new Application("Agent", "0.2.1"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -207,7 +207,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             $from = $default_from;
         }
 
-        if ($thing->thing != false) {
+        if (isset($thing->thing) and $thing->thing != false) {
             $f = trim(str_replace($uuid, "", $input));
             if ($f == "" or $f == "agent") {
                 $agent = new Uuid($thing, $f);
