@@ -146,6 +146,9 @@ use Symfony\Component\Console\Output\OutputInterface;
             // Read content from STDIN ...
         }
 
+        $uuid = $thing->getUuid();
+
+
         // Load settings file
         // See if there is an identity.
 
@@ -428,6 +431,7 @@ So in this content. "Failed to find a match" is 1.
         }
 
         $output->writeln("<info>$response</info>");
+        //$output->writeln("<comment>$meta_response</comment>");
 
         if (isset($meta_response)) {
             $output->writeln("<comment>$meta_response</comment>");
