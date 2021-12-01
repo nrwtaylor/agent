@@ -470,6 +470,11 @@ function responseLog($log, $thing, $thing_report)
             $thing_report
         );
         $log_response .= $log_handler->thing_report["log"] . "\n\n";
+
+if ($log == 'chain-of-custody') {
+        return $log_response;
+}
+
         $log_response .= "Self-report [Filtered]\n\n";
         $query_handler = new \Nrwtaylor\StackAgentThing\Query($thing, "query");
         [$log_includes, $log_excludes] = $query_handler->parseQuery($log);
