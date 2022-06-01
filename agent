@@ -174,13 +174,15 @@ use Symfony\Component\Console\Output\OutputInterface;
         $to = "agent";
 
         $datagram = [
-            'task' => $message,
+            'subject' => $message,
             'from' => $from,
             'to' => $to,
             'agent_input' => $agent_input,
         ];
-
-        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $datagram);
+//var_dump($datagram);
+//exit();
+//        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $datagram);
+        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $agent_input);
 
         $uuid = $thing->uuid;
 
