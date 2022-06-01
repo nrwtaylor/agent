@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.1.10"))
+(new Application("Agent", "0.1.12"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -118,7 +118,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         $message = implode(" ", $message);
 
-        $thing = new \Nrwtaylor\StackAgentThing\Thing(null);
+        //        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $datagram);
 
         // Handle stream as agent_input?
 
@@ -146,37 +146,43 @@ use Symfony\Component\Console\Output\OutputInterface;
             // Read content from STDIN ...
         }
 
-        $uuid = $thing->getUuid();
-
-
         // Load settings file
         // See if there is an identity.
 
         $settings_file = __DIR__ . "/private/settings.php";
         if (file_exists($settings_file)) {
-           $settings = require($settings_file);
+            $settings = require $settings_file;
         }
-
 
         $from = strtolower($input->getOption("from"));
 
         if (isset($settings['settings']['agent']['default_from'])) {
-           $default_from = $settings['settings']['agent']['default_from'];
-        // TODO Command line option
-
+            $default_from = $settings['settings']['agent']['default_from'];
+            // TODO Command line option
         }
 
         if ($from == false) {
             $from = $default_from;
         }
 
-        $uuid = $thing->getUuid();
+        //        $uuid = $thing->getUuid();
 
         if ($from == "<random non-persistent>") {
             $from = "console_" . $uuid;
         }
 
         $to = "agent";
+
+        $datagram = [
+            'task' => $message,
+            'from' => $from,
+            'to' => $to,
+            'agent_input' => $agent_input,
+        ];
+
+        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $datagram);
+
+        $uuid = $thing->uuid;
 
         $regex_handler = new \Nrwtaylor\StackAgentThing\Regex($thing, "regex");
 
@@ -203,27 +209,33 @@ use Symfony\Component\Console\Output\OutputInterface;
             $regex = false;
         }
 
-
         $meta = strtolower($input->getOption("meta"));
 
         if ($meta == false) {
             $from = $default_from;
         }
 
-        if ($thing->thing != false) {
+        if (isset($thing->thing) and $thing->thing != false) {
             $f = trim(str_replace($uuid, "", $input));
             if ($f == "" or $f == "agent") {
                 $agent = new Uuid($thing, $f);
                 $this->thing_report = $agent->thing_report;
                 return;
             }
+
             $agent = new Agent($thing, $f);
 
             $this->thing_report = $agent->thing_report;
             return;
         }
 
-        $thing->Create($from, $to, $message, $agent_input);
+        try {
+            $thing->Create($from, $to, $message, $agent_input);
+        } catch (\Throwable $t) {
+            $error = $t->getMessage();
+        } catch (\Error $ex) {
+            $error = $ex->getMessage();
+        }
 
         // Tag as console input
         $console = new \Nrwtaylor\StackAgentThing\Channel($thing, "console");
@@ -260,12 +272,19 @@ use Symfony\Component\Console\Output\OutputInterface;
             default:
                 // Default console handler is SMS.
                 $handler = $default_handler;
-                $agent = new \Nrwtaylor\StackAgentThing\Agent(
-                    $thing,
-                    $agent_input
-                );
 
-                $thing_report = $agent->thing_report;
+                $error = null;
+                try {
+                    $agent = new \Nrwtaylor\StackAgentThing\Agent(
+                        $thing,
+                        $agent_input
+                    );
+                    $thing_report = $agent->thing_report;
+                } catch (\Throwable $t) {
+                    $error = $t->getMessage();
+                } catch (\Error $ex) {
+                    $error = $ex->getMessage();
+                }
         }
 
         $response = "";
@@ -299,8 +318,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         if ($channels == true) {
             $channels_text = "";
-            foreach ($thing_report as $channel => $value) {
-                $channels_text .= $channel . " ";
+            if (is_array($thing_report)) {
+                foreach ($thing_report as $channel => $value) {
+                    $channels_text .= $channel . " ";
+                }
             }
             $response .= "\n" . trim($channels_text);
         }
@@ -320,10 +341,7 @@ use Symfony\Component\Console\Output\OutputInterface;
             $response .= "\n" . trim($urls_text);
         }
 
-            $text_handler = new \Nrwtaylor\StackAgentThing\Text(
-                $thing,
-                "text"
-            );
+        $text_handler = new \Nrwtaylor\StackAgentThing\Text($thing, "text");
 
         $query_handler = new \Nrwtaylor\StackAgentThing\Query($thing, "query");
 
@@ -368,6 +386,7 @@ So in this content. "Failed to find a match" is 1.
 
         if ($meta == "stack" or $meta == "on") {
             $meta_response = "";
+
             $agentclock = new \Nrwtaylor\StackAgentThing\Clocktime(
                 $thing,
                 "clocktime"
@@ -385,7 +404,6 @@ So in this content. "Failed to find a match" is 1.
 
             $prior = new \Nrwtaylor\StackAgentThing\Prior($thing, "prior");
             $meta_response .= " " . substr($prior->prior_uuid, 0, 4);
-
 
             if (isset($watch_flag) and $watch_flag !== true) {
                 $meta_response .= " WATCH FLAG";
@@ -471,9 +489,9 @@ function responseLog($log, $thing, $thing_report)
         );
         $log_response .= $log_handler->thing_report["log"] . "\n\n";
 
-if ($log == 'chain-of-custody') {
-        return $log_response;
-}
+        if ($log == 'chain-of-custody') {
+            return $log_response;
+        }
 
         $log_response .= "Self-report [Filtered]\n\n";
         $query_handler = new \Nrwtaylor\StackAgentThing\Query($thing, "query");
@@ -513,7 +531,11 @@ if ($log == 'chain-of-custody') {
 
         $text_handler = new \Nrwtaylor\StackAgentThing\Text($thing, "text");
 
-        $log_response .= $text_handler->filterText($log_text, $log_includes, $log_excludes);
+        $log_response .= $text_handler->filterText(
+            $log_text,
+            $log_includes,
+            $log_excludes
+        );
 
         //$response .= $log_response . "\n";
         return $log_response;
