@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 //require __DIR__.'/vendor/autoload.php';
-require "/var/www/stackr.test/vendor/autoload.php";
+require __DIR__.'/vendor/autoload.php';
 
 use Nrwtaylor\StackAgentThing;
 

@@ -1,5 +1,9 @@
 composer require symfony/console
 
+---
+
+composer install
+
 sudo touch agent
 sudo chmod +X agent
 
