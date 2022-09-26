@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.2.0"))
+(new Application("Agent", "0.2.2"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")

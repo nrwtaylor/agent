@@ -1,6 +1,5 @@
 {
     "name": "nrwtaylor/agent",
-    "version": "0.1.2",
     "description": "A PHP CLI agent to communicate with the PHP stack-agent-thing framework.",
     "require": {
         "nrwtaylor/stack-agent-thing": "dev-dev"
