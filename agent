@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 // Added persistent user level memory. Until power off.
 
-(new Application("Agent", "0.1.12"))
+(new Application("Agent", "0.2.0"))
     ->register("agent")
 
     ->addArgument("message", InputArgument::IS_ARRAY, "Datagram message")
@@ -179,9 +179,6 @@ use Symfony\Component\Console\Output\OutputInterface;
             'to' => $to,
             'agent_input' => $agent_input,
         ];
-//var_dump($datagram);
-//exit();
-//        $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $datagram);
         $thing = new \Nrwtaylor\StackAgentThing\Thing(null, $agent_input);
 
         $uuid = $thing->uuid;
@@ -233,6 +230,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
         try {
             $thing->Create($from, $to, $message, $agent_input);
+
         } catch (\Throwable $t) {
             $error = $t->getMessage();
         } catch (\Error $ex) {
@@ -449,7 +447,6 @@ So in this content. "Failed to find a match" is 1.
 
             $meta_response .= " " . $stack_text;
         }
-
         $output->writeln("<info>$response</info>");
         //$output->writeln("<comment>$meta_response</comment>");
 

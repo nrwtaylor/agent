@@ -3,15 +3,8 @@
     "version": "0.1.2",
     "description": "A PHP CLI agent to communicate with the PHP stack-agent-thing framework.",
     "require": {
-        "slim/slim": "^3.0",
-        "ramsey/uuid": "^3.7",
-        "monolog/monolog": "^1.23",
-        "hyperthese/php-serial": "*",
-        "linkorb/tty": "dev-master",
-        "nrwtaylor/stack-agent-thing": "*",
-        "symfony/console": "^4.3",
-        "setasign/fpdi-fpdf": "^2.0",
-        "endroid/qr-code": "^3.2.10",
-        "johngrogg/ics-parser": "^2.2"
-    }
+        "nrwtaylor/stack-agent-thing": "dev-dev"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
